@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -27,10 +27,12 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
-    const userCollection = client.db('productDB').collection('user');
+    const productCollection = client.db('productDB').collection('user');
+
+    const userCollection = client.db('productDB').collection('singleUser');
 
     app.get('/products', async(req,res) => {
-      const cursor = userCollection.find();
+      const cursor = productCollection.find();
       const result = await cursor.toArray();
       res.send(result);
     })
@@ -38,21 +40,52 @@ async function run() {
     app.get('/products/:brandName', async(req,res) => {
       const storedBrandName = req.params.brandName;
       const query = {brandName : storedBrandName}
-      const cursor = userCollection.find(query);
+      const cursor = productCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     })
 
+    app.get('/products/single/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)};
+      const cursor = await productCollection.findOne(query);
+      // const result = await cursor.toArray();
+      res.send(cursor);
+    })
+
+    app.get('/user', async(req, res)=> {
+      const cursor =  userCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    })
+
+    // app.get('/products/update/:id', async(req, res) => {
+    //   const id = req.params._id;
+    //   const query = {_id : new ObjectId(id)};
+    //   const result = await productCollection.findOne(query);
+    //   res.send(result);
+    // })
+
     app.post('/product', async(req, res) => {
       const newProduct = req.body;
       console.log(newProduct);
-      const result = await userCollection.insertOne(newProduct);
+      const result = await productCollection.insertOne(newProduct);
       res.send(result);
     })
 
     // User related api's 
-    app.post('/user', (req, res) => {
+    app.post('/user', async(req, res) => {
+      const user = req.body;
+      console.log(user);
+      const result = userCollection.insertOne(user);
+      res.send(result);
+    })
 
+    app.delete('/user/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)};
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
     })
 
 
